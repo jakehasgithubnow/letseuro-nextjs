@@ -96,7 +96,7 @@ const FeatureComparison: React.FC<FeatureComparisonProps> = ({
             </svg>
           </div>
           <p className="text-xl font-medium">
-            You shouldn't have to sacrifice quality just to go with the name everyone knows.
+          You shouldn&apos;t have to sacrifice quality just to go with the name everyone knows.
           </p>
         </div>
       </div>
