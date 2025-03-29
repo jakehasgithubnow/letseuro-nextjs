@@ -46,6 +46,8 @@ Additional Info:
 Directory Structure
 ================================================================
 app/
+  components/
+    FeatureComparison.tsx
   tools/
     [slug]/
       page.tsx
@@ -60,12 +62,15 @@ public/
   next.svg
   vercel.svg
   window.svg
+.eslintrc.js
+.eslintrc.json
 .gitignore
-eslint.config.mjs
 next.config.ts
 package.json
 postcss.config.mjs
 README.md
+tailwind.config.js
+testfile.txt
 tsconfig.json
 
 ================================================================
@@ -73,311 +78,515 @@ Files
 ================================================================
 
 ================
+File: app/components/FeatureComparison.tsx
+================
+// app/components/FeatureComparison.tsx
+import React from 'react';
+
+type FeatureComparisonProps = {
+  comparisonPoints: {
+    _key: string;
+    featureName?: string;
+    euToolValue?: string;
+    usToolValue?: string;
+  }[];
+  toolName: string;
+  usAlternativeName?: string;
+  comparisonTitle?: string;
+  comparisonSubtitle?: string;
+  comparisonTagline?: string;
+};
+
+const FeatureComparison: React.FC<FeatureComparisonProps> = ({
+  comparisonPoints,
+  toolName,
+  usAlternativeName = 'US Alternative',
+  comparisonTitle = 'FEATURE COMPARISON',
+  comparisonSubtitle = 'Everything You Need—',
+  comparisonTagline = 'Just Without the Brand Price Tag',
+}) => {
+  if (!comparisonPoints || comparisonPoints.length === 0) return null;
+
+  // Function to render check or cross marks
+  const renderMark = (value: string) => {
+    // Check if value is just "Yes", "✓", "true" etc. for a checkmark
+    const positiveValues = ['yes', 'true', '✓', 'y', 'available', 'included'];
+    const negativeValues = ['no', 'false', '✗', 'x', 'n', 'unavailable', 'not included'];
+    
+    const lowercaseValue = value.toLowerCase();
+    
+    if (positiveValues.includes(lowercaseValue)) {
+      return (
+        <span className="text-green-500 text-2xl flex justify-center">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </span>
+      );
+    } else if (negativeValues.includes(lowercaseValue)) {
+      return (
+        <span className="text-red-500 text-2xl flex justify-center">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </span>
+      );
+    } else {
+      // For any other value, return the text
+      return <span>{value}</span>;
+    }
+  };
+
+  return (
+    <section className="my-16">
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-center text-3xl font-bold text-purple-600 mb-4">{comparisonTitle}</h2>
+        <h3 className="text-center text-4xl font-bold mb-12">
+          {comparisonSubtitle}<br />
+          {comparisonTagline}
+        </h3>
+        
+        <div className="overflow-hidden border border-gray-200 rounded-lg shadow-md">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="px-6 py-4 text-lg font-semibold text-gray-800 border-b border-r">Feature</th>
+                <th className="px-6 py-4 text-lg font-semibold text-gray-800 text-center border-b border-r">{toolName}</th>
+                <th className="px-6 py-4 text-lg font-semibold text-red-500 text-center border-b">{usAlternativeName}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {comparisonPoints.map((point) => (
+                <tr key={point._key} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium border-r">{point.featureName}</td>
+                  <td className="px-6 py-4 text-center border-r">
+                    {renderMark(point.euToolValue || '')}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {renderMark(point.usToolValue || '')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <div className="mt-8 flex items-center justify-center">
+          <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <p className="text-xl font-medium">
+          You shouldn&apos;t have to sacrifice quality just to go with the name everyone knows.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default FeatureComparison;
+
+================
 File: app/tools/[slug]/page.tsx
 ================
 // app/tools/[slug]/page.tsx
 
-// --- Core Next.js/React Imports ---
-import Image from 'next/image'; // For optimized images
+import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation'; // For handling 404s
+import { notFound } from 'next/navigation';
+import FeatureComparison from '../../components/FeatureComparison';
 
-// --- Sanity Client & Helpers ---
 import {
-  client,           // The configured Sanity client
-  getCommonContent, // Helper to fetch shared content
-  urlFor,           // Helper to generate image URLs
-  // Import Types for data structure & type safety
-  type CommonContent,
+  client,
+  getCommonContent,
+  urlFor,
   type Tool,
   type FeatureItem,
   type ComparisonPoint,
   type PricingTier,
   type ImageWithAlt
-} from '../../../lib/sanity'; // Adjust the relative path if your 'lib' folder is elsewhere
+} from '../../../lib/sanity';
 
-// --- Page Props Definition ---
-// Defines the expected parameters passed to the page component by Next.js
 type ToolPageProps = {
-    params: {
-        slug: string; // Corresponds to the [slug] part of the folder name
-    };
+  params: {
+    slug: string;
+  };
 };
 
-// --- Incremental Static Regeneration (ISR) ---
-// Revalidate the data for this page every 60 seconds
-// Allows updates from Sanity to appear without a full rebuild
 export const revalidate = 60;
 
-// --- HELPER COMPONENTS (for rendering specific sections) ---
-// Note: In a larger app, move these to a dedicated 'components' folder
-
 const FeatureSection: React.FC<{ features: FeatureItem[] | undefined }> = ({ features }) => {
-    if (!features || features.length === 0) return null; // Render nothing if no features
-    return (
-        <section style={{ margin: '30px 0' }}>
-            <h2>Key Features & Benefits</h2>
-            <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                {features.map((feature) => (
-                    <div key={feature._key} style={{ border: '1px solid #ddd', padding: '15px 20px', borderRadius: '5px', background: '#fff' }}>
-                        <h3 style={{ marginTop: 0, fontSize: '1.1em' }}>{feature.title}</h3>
-                        <p style={{ fontSize: '0.95em', lineHeight: '1.6' }}>{feature.description}</p>
-                    </div>
-                ))}
-            </div>
-        </section>
-    );
+  if (!features || features.length === 0) return null;
+  return (
+    <section className="my-12">
+      <h2 className="text-3xl font-bold mb-8">Key Features & Benefits</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {features.map((feature) => (
+          <div key={feature._key} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
+            <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+            <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-const ComparisonSection: React.FC<{ points: ComparisonPoint[] | undefined }> = ({ points }) => {
-    if (!points || points.length === 0) return null;
-    return (
-        <section style={{ margin: '30px 0' }}>
-            <h2>How We Compare</h2>
-            <div style={{ overflowX: 'auto', border: '1px solid #ddd', borderRadius: '5px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px' }}>
-                    <thead>
-                        <tr style={{ background: '#f2f2f2' }}>
-                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>Feature</th>
-                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>This Tool</th>
-                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>US Alternative</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {points.map((point) => (
-                            <tr key={point._key} style={{ borderTop: '1px solid #eee'}}>
-                                <td style={{ padding: '10px 12px', fontWeight: '500' }}>{point.featureName}</td>
-                                <td style={{ padding: '10px 12px' }}>{point.euToolValue}</td>
-                                <td style={{ padding: '10px 12px' }}>{point.usToolValue}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    );
-}
+const ComparisonSection: React.FC<{ 
+  points: ComparisonPoint[] | undefined,
+  toolName: string,
+  usAlternativeName?: string,
+  comparisonTitle?: string,
+  comparisonSubtitle?: string,
+  comparisonTagline?: string
+}> = ({ 
+  points, 
+  toolName, 
+  usAlternativeName,
+  comparisonTitle,
+  comparisonSubtitle,
+  comparisonTagline
+}) => {
+  if (!points || points.length === 0) return null;
+  
+  return (
+    <FeatureComparison 
+      comparisonPoints={points} 
+      toolName={toolName}
+      usAlternativeName={usAlternativeName || 'US Alternative'} 
+      comparisonTitle={comparisonTitle}
+      comparisonSubtitle={comparisonSubtitle}
+      comparisonTagline={comparisonTagline}
+    />
+  );
+};
 
 const PricingSection: React.FC<{ tiers: PricingTier[] | undefined }> = ({ tiers }) => {
-    if (!tiers || tiers.length === 0) return null;
-    return (
-        <section style={{ margin: '30px 0', background: '#f8f9fa', padding: '30px 20px', borderRadius: '8px' }}>
-            <h2 style={{ textAlign: 'center', marginBottom: '25px' }}>Pricing Plans</h2>
-             <div style={{ display: 'grid', gap: '25px', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-                {tiers.map((tier) => (
-                    <div key={tier._key} style={{ border: '1px solid #ccc', padding: '25px', background: 'white', borderRadius: '8px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-                        <h3 style={{ marginTop: 0, textAlign: 'center', minHeight: '2.5em', color: '#333' }}>{tier.name}</h3>
-                        <p style={{ fontSize: '1.8em', fontWeight: 'bold', textAlign: 'center', margin: '10px 0', color: '#007bff' }}>{tier.price}</p>
-                        <ul style={{ flexGrow: 1, paddingLeft: '20px', marginBottom: '25px', fontSize: '0.9em', color: '#555' }}>
-                            {tier.featuresList?.map((feature, index) => <li key={index} style={{ marginBottom: '8px'}}>{feature}</li>)}
-                        </ul>
-                        <button style={{ padding: '12px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: 'auto', fontWeight: 'bold', fontSize: '1em', transition: 'background-color 0.2s ease' }}>
-                            {tier.ctaText || 'Get Started'}
-                        </button>
-                    </div>
+  if (!tiers || tiers.length === 0) return null;
+  return (
+    <section className="my-12 bg-gray-50 py-12 px-6 rounded-xl">
+      <h2 className="text-3xl font-bold mb-10 text-center">Pricing Plans</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {tiers.map((tier) => (
+          <div key={tier._key} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-center mb-4">{tier.name}</h3>
+              <p className="text-4xl font-bold text-center text-blue-600 mb-6">{tier.price}</p>
+              <ul className="space-y-3 mb-8">
+                {tier.featuresList?.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-gray-600">{feature}</span>
+                  </li>
                 ))}
+              </ul>
             </div>
-        </section>
-    )
+            <div className="mt-auto p-6 pt-0">
+              <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
+                {tier.ctaText || 'Get Started'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
-// --- Shared Content Components ---
 const AboutUsSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-    if (!content) return null;
-    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#f9f9f9', borderRadius: '5px' }}><h2>About Us (Shared)</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+  if (!content) return null;
+  return (
+    <section className="my-12 bg-gray-50 p-8 rounded-lg">
+      <h2 className="text-3xl font-bold mb-4">About Us</h2>
+      <p className="text-gray-700 leading-relaxed">{content}</p>
+    </section>
+  );
 };
 
 const TestimonialsSection: React.FC<{ testimonials: string[] | undefined }> = ({ testimonials }) => {
-    if (!testimonials || testimonials.length === 0) return null;
-    return (
-        <section style={{ margin: '30px 0', padding: '20px', background: '#f0f0f0', borderRadius: '5px' }}>
-            <h2 style={{ marginBottom: '15px' }}>What Our Customers Say (Shared)</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {testimonials.map((testimonial, index) => (
-                    <blockquote key={index} style={{ borderLeft: '4px solid #007bff', paddingLeft: '15px', margin: 0, fontStyle: 'italic', color: '#444' }}>
-                       "{testimonial}"
-                    </blockquote>
-                 ))}
-            </div>
-        </section>
-    );
+  if (!testimonials || testimonials.length === 0) return null;
+  return (
+    <section className="my-12 bg-gray-50 p-8 rounded-lg">
+      <h2 className="text-3xl font-bold mb-6">What Our Customers Say</h2>
+      <div className="space-y-6">
+        {testimonials.map((testimonial, index) => (
+          <blockquote key={index} className="border-l-4 border-blue-500 pl-4 italic text-gray-700">
+            &quot;{testimonial}&quot;
+          </blockquote>
+        ))}
+      </div>
+    </section>
+  );
 };
 
 const WhyEuSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-    if (!content) return null;
-    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#eaf6ff', border: '1px solid #bde0ff', borderRadius: '5px' }}><h2>Why Choose the EU Version?</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+  if (!content) return null;
+  return (
+    <section className="my-12 bg-blue-50 border border-blue-100 p-8 rounded-lg">
+      <h2 className="text-3xl font-bold mb-4">Why Choose the EU Version?</h2>
+      <p className="text-gray-700 leading-relaxed">{content}</p>
+    </section>
+  );
 };
 
 const GdprFocusSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-   if (!content) return null;
-    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#fff8e1', border: '1px solid #ffecb3', borderRadius: '5px' }}><h2>GDPR Compliance Focus</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+  if (!content) return null;
+  return (
+    <section className="my-12 bg-amber-50 border border-amber-100 p-8 rounded-lg">
+      <h2 className="text-3xl font-bold mb-4">GDPR Compliance Focus</h2>
+      <p className="text-gray-700 leading-relaxed">{content}</p>
+    </section>
+  );
 };
 
- const LogosSection: React.FC<{ logos: ImageWithAlt[] | undefined }> = ({ logos }) => {
-    if (!logos || logos.length === 0) return null;
-    return (
-        <section style={{ margin: '30px 0', padding: '25px 15px', textAlign: 'center', background: '#f8f9fa', borderRadius: '5px' }}>
-            <h2 style={{ marginBottom: '25px', color: '#6c757d', fontSize: '1.1em', fontWeight: '500' }}>Trusted By Leading EU Businesses</h2>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '30px 40px', alignItems: 'center' }}>
-                {logos.map((logo) => logo.asset ? (
-                    <div key={logo._key} style={{ height: '50px', display: 'flex', alignItems: 'center' }}>
-                         <Image
-                            src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
-                            alt={logo.alt || 'Customer logo'}
-                            width={160}
-                            height={50}
-                            style={{ objectFit: 'contain', filter: 'grayscale(100%)', opacity: '0.7' }} // Example styling
-                         />
-                     </div>
-                ) : null)}
-             </div>
-         </section>
-     );
+const LogosSection: React.FC<{ logos: ImageWithAlt[] | undefined }> = ({ logos }) => {
+  if (!logos || logos.length === 0) return null;
+  return (
+    <section className="my-12 py-10 px-6 bg-gray-50 rounded-lg text-center">
+      <h2 className="text-xl font-medium text-gray-500 mb-8">Trusted By Leading EU Businesses</h2>
+      <div className="flex flex-wrap justify-center items-center gap-10">
+        {logos.map((logo) => logo.asset ? (
+          <div key={logo._key} className="h-14 flex items-center">
+            <Image
+              src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
+              alt={logo.alt || 'Customer logo'}
+              width={160}
+              height={50}
+              className="object-contain grayscale opacity-70"
+            />
+          </div>
+        ) : null)}
+      </div>
+    </section>
+  );
 };
 
-// --- Data Fetching Function for Static Generation ---
-// Tells Next.js which '/tools/[slug]' pages to generate at build time
 export async function generateStaticParams() {
-    // Query Sanity for the slugs of all published 'tool' documents
-    const query = `*[_type == "tool" && defined(slug.current)][].slug.current`;
-    const slugs = await client.fetch<string[]>(query);
+  const query = `*[_type == "tool" && defined(slug.current)][].slug.current`;
+  const slugs = await client.fetch<string[]>(query);
 
-    // Return an array of objects, where each object has the required 'slug' parameter
-    return slugs.map((slug) => ({
-        slug: slug, // The key 'slug' matches the dynamic segment name '[slug]'
-    }));
+  return slugs.map((slug) => ({
+    slug: slug,
+  }));
 }
 
-// --- MAIN PAGE COMPONENT (React Server Component) ---
-// This component fetches data and renders the page for a specific tool
-export default async function ToolPage({ params }: ToolPageProps) {
-    const slug = params.slug; // Extract the slug from the URL parameters
+export default async function ToolPage({ params }: { params: { slug: string } }) {
+  const slug = params.slug;
 
-    // --- GROQ Query to Fetch Tool Data ---
-    // Selects the single document of type 'tool' matching the current slug.
-    // Uses projections `{...}` to specify needed fields and `asset->` to get image details.
+  try {
     const toolQuery = `*[_type == "tool" && slug.current == $slug][0]{
-        _id, name, tagline, slug, primaryCTAText, secondaryCTAText, uniqueDescription,
-        heroImage{alt, asset->{_id, url, metadata { dimensions }}},
-        uniqueFeatures[]{_key, title, description},
-        comparisonPoints[]{_key, featureName, euToolValue, usToolValue},
-        pricingTiers[]{_key, name, price, featuresList, ctaText}
+      _id, name, tagline, slug, primaryCTAText, secondaryCTAText, uniqueDescription,
+      usAlternativeName,
+      comparisonTitle, comparisonSubtitle, comparisonTagline,
+      heroImage{alt, asset->{_id, url, metadata { dimensions }}},
+      uniqueFeatures[]{_key, title, description},
+      comparisonPoints[]{_key, featureName, euToolValue, usToolValue},
+      pricingTiers[]{_key, name, price, featuresList, ctaText}
     }`;
 
-    // --- Fetch Tool-Specific and Common Content Concurrently ---
     const [tool, commonContent] = await Promise.all([
-        client.fetch<Tool | null>(toolQuery, { slug }), // Fetch the specific tool (or null if not found)
-        getCommonContent(), // Fetch the shared common content document
+      client.fetch<Tool | null>(toolQuery, { slug }),
+      getCommonContent(),
     ]);
 
-    // --- Handle Not Found Case ---
-    // If no tool data was returned for the given slug, render the 404 page
     if (!tool) {
-        notFound();
+      notFound();
     }
 
-    // --- Render the Page JSX ---
     return (
-        // Main container - Apply max-width and padding
-        // Replace inline styles with CSS classes for production
-        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem 2rem' }}>
-
-            {/* --- Hero Section --- */}
-            <section style={{ textAlign: 'center', padding: '40px 0', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
-                <h1>{tool.name}</h1>
-                {tool.tagline && <p style={{ fontSize: '1.25em', color: '#555', marginTop: '0.5rem', marginBottom: '25px' }}>{tool.tagline}</p>}
-
-                {/* Hero Image - Render only if asset exists */}
-                {tool.heroImage?.asset && (
-                    <div style={{ margin: '25px auto', position: 'relative', width: '100%', maxWidth: '750px', aspectRatio: '16/9', background: '#f0f0f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                         <Image
-                            src={urlFor(tool.heroImage).width(1000).quality(85).auto('format').url()}
-                            alt={tool.heroImage.alt || `${tool.name} hero image`}
-                            layout="fill"
-                            objectFit="contain" // Use 'cover' if you want it to fill the box
-                            priority // Load LCP image faster
-                         />
-                     </div>
-                )}
-
-                {/* CTAs */}
-                <div style={{ marginTop: '30px' }}>
-                    {tool.primaryCTAText && (
-                        <button style={{ padding: '12px 28px', fontSize: '1.1em', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '10px', marginBottom: '10px', fontWeight: 'bold' }}>
-                            {tool.primaryCTAText}
-                        </button>
-                    )}
-                     {tool.secondaryCTAText && (
-                        <button style={{ padding: '11px 25px', fontSize: '1.05em', background: 'transparent', color: '#007bff', border: '2px solid #007bff', borderRadius: '5px', cursor: 'pointer', marginBottom: '10px', fontWeight: 'bold' }}>
-                            {tool.secondaryCTAText}
-                        </button>
-                    )}
-                </div>
-            </section>
-
-             {/* --- Overview/Description Section --- */}
-             {tool.uniqueDescription && (
-                <section style={{ margin: '40px 0', lineHeight: '1.7', fontSize: '1.05em' }}>
-                    <h2>Overview</h2>
-                    <p>{tool.uniqueDescription}</p>
-                </section>
-             )}
-
-             {/* --- Render Shared Why EU / GDPR --- */}
-             <WhyEuSection content={commonContent?.whyEu} />
-             <GdprFocusSection content={commonContent?.gdprFocus} />
-
-            {/* --- Render Sections Using Helper Components --- */}
-            <FeatureSection features={tool.uniqueFeatures} />
-            <ComparisonSection points={tool.comparisonPoints} />
-            <LogosSection logos={commonContent?.globalCustomerLogos} />
-            <TestimonialsSection testimonials={commonContent?.globalTestimonials} />
-            <PricingSection tiers={tool.pricingTiers} />
-            <AboutUsSection content={commonContent?.aboutUs} />
-
-            {/* --- Final CTA --- */}
-             <section style={{ textAlign: 'center', padding: '50px 20px', marginTop: '40px', borderTop: '1px solid #eee', background: '#f8f9fa', borderRadius: '5px' }}>
-                 <h2 style={{ marginBottom: '15px' }}>Ready to Experience {tool.name} in the EU?</h2>
-                 <p style={{maxWidth: '600px', margin: '0 auto 25px auto', color: '#555'}}>Get started today and enjoy the benefits of EU-hosted software.</p>
+      <div className="bg-white text-gray-900 min-h-screen">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          {/* Hero Section */}
+          <section className="mb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+                  <span className="block">Everything you ever</span>
+                  <span className="text-orange-500">wanted to know</span>
+                  <span className="block">about {tool.name}</span>
+                </h1>
+                <p className="text-xl text-gray-600 mb-8">{tool.tagline}</p>
+                <div className="flex flex-wrap gap-4">
                   {tool.primaryCTAText && (
-                        <button style={{ padding: '14px 35px', fontSize: '1.2em', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            {tool.primaryCTAText}
-                        </button>
-                    )}
-             </section>
+                    <button className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                      {tool.primaryCTAText}
+                    </button>
+                  )}
+                  {tool.secondaryCTAText && (
+                    <button className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md border-2 border-blue-600 hover:bg-blue-50 transition-colors">
+                      {tool.secondaryCTAText}
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-xl overflow-hidden shadow-lg">
+                {tool.heroImage?.asset ? (
+                  <Image
+                    src={urlFor(tool.heroImage).width(600).height(400).auto('format').url()}
+                    alt={tool.heroImage.alt || `${tool.name} hero image`}
+                    width={600}
+                    height={400}
+                    className="w-full h-auto"
+                    priority
+                  />
+                ) : (
+                  <div className="bg-gray-100 w-full h-80 flex items-center justify-center">
+                    <p className="text-gray-400">Tool image</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
 
-        </div> // End main container
+          {/* Overview/Description */}
+          {tool.uniqueDescription && (
+            <section className="my-12">
+              <h2 className="text-3xl font-bold mb-4">Overview</h2>
+              <p className="text-lg text-gray-700 leading-relaxed">{tool.uniqueDescription}</p>
+            </section>
+          )}
+
+          {/* EU & GDPR Sections */}
+          <WhyEuSection content={commonContent?.whyEu} />
+          <GdprFocusSection content={commonContent?.gdprFocus} />
+
+          {/* Features, Comparison & Other Sections */}
+          <FeatureSection features={tool.uniqueFeatures} />
+          
+          {/* Updated Comparison section with the tool name and US alternative name */}
+          <ComparisonSection 
+            points={tool.comparisonPoints} 
+            toolName={tool.name}
+            usAlternativeName={tool.usAlternativeName}
+            comparisonTitle={tool.comparisonTitle}
+            comparisonSubtitle={tool.comparisonSubtitle}
+            comparisonTagline={tool.comparisonTagline}
+          />
+          
+          <LogosSection logos={commonContent?.globalCustomerLogos} />
+          <TestimonialsSection testimonials={commonContent?.globalTestimonials} />
+          <PricingSection tiers={tool.pricingTiers} />
+          <AboutUsSection content={commonContent?.aboutUs} />
+
+          {/* Final CTA */}
+          <section className="my-16 bg-gray-50 py-12 px-8 rounded-xl text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to Experience {tool.name} in the EU?</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
+              Get started today and enjoy the benefits of EU-hosted software.
+            </p>
+            {tool.primaryCTAText && (
+              <button className="px-8 py-4 text-xl bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                {tool.primaryCTAText}
+              </button>
+            )}
+          </section>
+        </div>
+      </div>
     );
-} // End ToolPage Component
+  } catch (error) {
+    console.error("Error in ToolPage:", error);
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
+          Error loading tool information
+        </h2>
+        <p className="text-gray-600 mb-6">
+          We encountered a problem fetching data for this tool. Please try again later.
+        </p>
+        <Link href="/" className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+          Return to Home
+        </Link>
+      </div>
+    );
+  }
+}
 
 ================
 File: app/globals.css
 ================
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Force light mode even when user prefers dark mode */
+:root {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Hotjar-inspired button styles */
+.btn-primary {
+  background-color: #0052CC;
+  color: white;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #0043A9;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: #0052CC;
+  border: 1px solid #0052CC;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(0, 82, 204, 0.05);
+}
+
+/* Headings */
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Hotjar accent colors */
+.accent-orange {
+  color: #FF5C35;
+}
+
+.bg-accent-orange {
+  background-color: #FF5C35;
+}
+
+.accent-blue {
+  color: #0052CC;
+}
+
+.bg-accent-blue {
+  background-color: #0052CC;
 }
 
 ================
@@ -385,6 +594,8 @@ File: app/layout.tsx
 ================
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -398,8 +609,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Create Next App",
-  description: "Generated by create next app",
+  title: "EU Software Alternatives",
+  description: "Discover EU-based alternatives to popular US tools with enhanced GDPR compliance",
 };
 
 export default function RootLayout({
@@ -408,11 +619,98 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="bg-white min-h-screen flex flex-col antialiased">
+        {/* Header */}
+        <header className="border-b border-gray-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <Link href="/" className="flex items-center">
+                  <span className="text-2xl font-bold">EU Clones</span>
+                </Link>
+                <nav className="hidden md:ml-10 md:flex md:space-x-8">
+                  <Link href="/" className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium">
+                    Home
+                  </Link>
+                  <Link href="/tools" className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium">
+                    Tools
+                  </Link>
+                  <Link href="/pricing" className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium">
+                    Pricing
+                  </Link>
+                  <Link href="/case-studies" className="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium">
+                    Case Studies
+                  </Link>
+                </nav>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Link 
+                  href="/contact" 
+                  className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium"
+                >
+                  Contact Sales
+                </Link>
+                <Link 
+                  href="/login" 
+                  className="border border-gray-300 rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Sign in
+                </Link>
+                <Link 
+                  href="/get-started" 
+                  className="bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium hover:bg-blue-700"
+                >
+                  Get started
+                </Link>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main content */}
+        <main className="flex-grow">
+          {children}
+        </main>
+
+        {/* Footer */}
+        <footer className="bg-gray-50 border-t border-gray-200">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">EU Clones</h3>
+                <p className="text-gray-600">Your one-stop directory for EU-based alternatives to popular US tools.</p>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Products</h3>
+                <ul className="space-y-2">
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">All Tools</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">GDPR Compliance</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">EU Hosting</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Resources</h3>
+                <ul className="space-y-2">
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Blog</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Case Studies</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Documentation</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Company</h3>
+                <ul className="space-y-2">
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">About Us</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Contact</Link></li>
+                  <li><Link href="#" className="text-gray-600 hover:text-gray-900">Privacy Policy</Link></li>
+                </ul>
+              </div>
+            </div>
+            <div className="border-t border-gray-200 mt-8 pt-8 text-center text-gray-500">
+              <p>© {new Date().getFullYear()} EU Clones. All rights reserved.</p>
+            </div>
+          </div>
+        </footer>
       </body>
     </html>
   );
@@ -423,47 +721,195 @@ File: app/page.tsx
 ================
 // app/page.tsx
 import Link from 'next/link';
-import { client, type Tool } from '../lib/sanity'; // Import client and Tool type
+import Image from 'next/image';
+import { client, type Tool } from '../lib/sanity';
 
-// Revalidate the page every 60 seconds (ISR)
-// App Router equivalent of revalidate in getStaticProps
 export const revalidate = 60;
 
-// This is a React Server Component (RSC) - the default in App Router
 export default async function HomePage() {
   // Fetch data directly within the Server Component
   const query = `*[_type == "tool" && defined(slug.current)]{
     _id,
     name,
     tagline,
-    slug
+    slug,
+    heroImage{alt, asset->}
   }`;
   const tools = await client.fetch<Tool[]>(query);
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>EU Software Clones</h1>
-      <p>Your one-stop directory for EU-based alternatives to popular US tools.</p>
-      <hr style={{ margin: '1rem 0' }} />
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h1 className="text-4xl sm:text-5xl font-bold mb-6">
+                <span className="block">Everything you ever</span>
+                <span className="text-orange-500">wanted to know</span>
+                <span className="block">about EU software alternatives</span>
+              </h1>
+              <p className="text-xl text-gray-600 mb-8">
+                Your one-stop directory for EU-based alternatives to popular US tools with enhanced GDPR compliance.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/tools" className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
+                  Get started
+                </Link>
+                <Link href="/contact" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md border-2 border-blue-600 hover:bg-blue-50 transition-colors">
+                  Contact sales
+                </Link>
+              </div>
+              <p className="text-gray-500 mt-4 text-sm">No credit card required. Upgrade any time.</p>
+            </div>
+            <div className="rounded-xl overflow-hidden">
+              <Image
+                src="/globe.svg"
+                alt="EU Software Clones"
+                width={600}
+                height={400}
+                className="w-full h-auto"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <h2>Available Tools:</h2>
-      {tools?.length > 0 ? (
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {tools.map((tool) => (
-            <li key={tool._id} style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
-              <Link href={`/tools/${tool.slug.current}`}>
-                {/* No <a> tag needed inside Link in newer Next.js versions */}
-                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', color: 'blue' }}>
-                  {tool.name}
-                </span>
-              </Link>
-              {tool.tagline && <p style={{ margin: '0.25rem 0 0 0', color: '#555' }}>{tool.tagline}</p>}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No tools found. Add some in your Sanity Studio!</p>
-      )}
+      {/* Tools List Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Discover EU-Based Software Alternatives</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Browse our curated collection of GDPR-compliant tools hosted in the European Union
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {tools?.length > 0 ? (
+              tools.map((tool) => (
+                <Link
+                  key={tool._id}
+                  href={`/tools/${tool.slug.current}`}
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="h-40 bg-gray-100 relative">
+                    {tool.heroImage?.asset ? (
+                      <Image
+                        src={tool.heroImage.asset.url}
+                        alt={tool.heroImage.alt || tool.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Image
+                          src="/window.svg"
+                          alt="Tool icon"
+                          width={48}
+                          height={48}
+                          className="opacity-50"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{tool.name}</h3>
+                    {tool.tagline && <p className="text-gray-600">{tool.tagline}</p>}
+                    <div className="mt-4 flex justify-end">
+                      <span className="text-blue-600 font-medium flex items-center">
+                        Learn more
+                        <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-gray-500">No tools found. Add some in your Sanity Studio!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Why Choose EU Alternatives?</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Enjoy the benefits of software designed with European values and regulations in mind
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-blue-600 mb-4">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Enhanced GDPR Compliance</h3>
+              <p className="text-gray-600">
+                Software built from the ground up with European data protection regulations in mind.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-blue-600 mb-4">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">EU Data Hosting</h3>
+              <p className="text-gray-600">
+                All your data stays within EU borders, ensuring compliance with data residency requirements.
+              </p>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <div className="text-blue-600 mb-4">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">Competitive Pricing</h3>
+              <p className="text-gray-600">
+                Get all the features you need at prices that compete with or beat US-based alternatives.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gray-50 py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to explore EU-based alternatives?</h2>
+          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            Discover software solutions that respect your privacy, comply with EU regulations, and deliver the features you need.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link 
+              href="/tools" a
+              className="px-8 py-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Browse All Tools
+            </Link>
+            <Link 
+              href="/contact" 
+              className="px-8 py-4 bg-white text-blue-600 font-medium rounded-md border-2 border-blue-600 hover:bg-blue-50 transition-colors"
+            >
+              Contact Us
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -525,11 +971,15 @@ export interface Tool {
     name: string; // Required field
     tagline?: string;
     slug: Slug; // Use the imported Slug type
+    usAlternativeName?: string; // Added field
     heroImage?: ImageWithAlt; // Added field
     primaryCTAText?: string; // Added field
     secondaryCTAText?: string; // Added field
     uniqueDescription?: string;
     uniqueFeatures?: FeatureItem[]; // Updated field (array of FeatureItem objects)
+    comparisonTitle?: string; // Comparison section title
+    comparisonSubtitle?: string; // Comparison section subtitle (first line)
+    comparisonTagline?: string; // Comparison section tagline (second line)
     comparisonPoints?: ComparisonPoint[]; // Added field
     pricingTiers?: PricingTier[]; // Added field
 }
@@ -546,7 +996,7 @@ const config: ClientConfig = {
 };
 
 // Runtime check to ensure projectId is configured
-if (!config.projectId) {
+if (typeof process !== 'undefined' && !config.projectId) {
   throw new Error(
     "Configuration Error: The environment variable NEXT_PUBLIC_SANITY_PROJECT_ID is missing or invalid. Please check your .env.local file."
   );
@@ -570,9 +1020,8 @@ export async function getCommonContent(): Promise<CommonContent | null> {
   // Using '...' fetches all top-level fields defined in the interface.
   const query = `*[_type == "commonContent"][0]{
       ...,
-      // Explicitly expand image references if needed immediately,
-      // otherwise urlFor handles fetching based on the reference.
-      // Example: globalCustomerLogos[]{..., asset->}
+      // Explicitly expand image references if needed
+      globalCustomerLogos[]{..., asset->}
     }`;
   try {
     const commonData = await client.fetch<CommonContent>(query);
@@ -607,6 +1056,29 @@ File: public/vercel.svg
 File: public/window.svg
 ================
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+
+================
+File: .eslintrc.js
+================
+module.exports = {
+  root: true,
+  extends: ['next/core-web-vitals'],
+  rules: {
+    'react/no-unescaped-entities': 'off',
+    '@typescript-eslint/no-unused-vars': 'off'
+  }
+}
+
+================
+File: .eslintrc.json
+================
+{
+    "extends": "next/core-web-vitals",
+    "rules": {
+      "react/no-unescaped-entities": "off",
+      "@typescript-eslint/no-unused-vars": "off"
+    }
+  }
 
 ================
 File: .gitignore
@@ -654,26 +1126,6 @@ yarn-error.log*
 next-env.d.ts
 
 ================
-File: eslint.config.mjs
-================
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-];
-
-export default eslintConfig;
-
-================
 File: next.config.ts
 ================
 // next.config.ts
@@ -703,6 +1155,8 @@ const nextConfig = {
   // ... any other existing configuration
 };
 
+eslint: { ignoreDuringBuilds: true }
+
 export default nextConfig;
 
 ================
@@ -713,28 +1167,30 @@ File: package.json
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint --no-error-on-unmatched-pattern"
   },
   "dependencies": {
+    "@sanity/cli": "^3.81.0",
     "@sanity/client": "^6.28.4",
     "@sanity/image-url": "^1.1.0",
     "next": "15.2.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sanity": "^3.81.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.21",
+    "autoprefixer": "^10.4.16",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.0.17",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
     "typescript": "^5"
   }
 }
@@ -742,11 +1198,13 @@ File: package.json
 ================
 File: postcss.config.mjs
 ================
-const config = {
-  plugins: ["@tailwindcss/postcss"],
+// postcss.config.mjs
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
 };
-
-export default config;
 
 ================
 File: README.md
@@ -787,6 +1245,33 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+================
+File: tailwind.config.js
+================
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+export default {
+    content: [
+      "./app/**/*.{js,ts,jsx,tsx}",
+      "./pages/**/*.{js,ts,jsx,tsx}",
+      "./components/**/*.{js,ts,jsx,tsx}",
+    ],
+    theme: {
+      extend: {
+        colors: {
+          'hotjar-orange': '#FF5C35',
+          'hotjar-blue': '#0052CC',
+        },
+      },
+    },
+    plugins: [],
+  };
+
+================
+File: testfile.txt
+================
+IS this working?
 
 ================
 File: tsconfig.json

@@ -16,12 +16,6 @@ import {
   type ImageWithAlt
 } from '../../../lib/sanity';
 
-type ToolPageProps = {
-  params: {
-    slug: string;
-  };
-};
-
 export const revalidate = 60;
 
 const FeatureSection: React.FC<{ features: FeatureItem[] | undefined }> = ({ features }) => {
