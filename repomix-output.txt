@@ -1,0 +1,826 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+
+Additional Info:
+----------------
+
+================================================================
+Directory Structure
+================================================================
+app/
+  tools/
+    [slug]/
+      page.tsx
+  globals.css
+  layout.tsx
+  page.tsx
+lib/
+  sanity.ts
+public/
+  file.svg
+  globe.svg
+  next.svg
+  vercel.svg
+  window.svg
+.gitignore
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+README.md
+tsconfig.json
+
+================================================================
+Files
+================================================================
+
+================
+File: app/tools/[slug]/page.tsx
+================
+// app/tools/[slug]/page.tsx
+
+// --- Core Next.js/React Imports ---
+import Image from 'next/image'; // For optimized images
+import Link from 'next/link';
+import { notFound } from 'next/navigation'; // For handling 404s
+
+// --- Sanity Client & Helpers ---
+import {
+  client,           // The configured Sanity client
+  getCommonContent, // Helper to fetch shared content
+  urlFor,           // Helper to generate image URLs
+  // Import Types for data structure & type safety
+  type CommonContent,
+  type Tool,
+  type FeatureItem,
+  type ComparisonPoint,
+  type PricingTier,
+  type ImageWithAlt
+} from '../../../lib/sanity'; // Adjust the relative path if your 'lib' folder is elsewhere
+
+// --- Page Props Definition ---
+// Defines the expected parameters passed to the page component by Next.js
+type ToolPageProps = {
+    params: {
+        slug: string; // Corresponds to the [slug] part of the folder name
+    };
+};
+
+// --- Incremental Static Regeneration (ISR) ---
+// Revalidate the data for this page every 60 seconds
+// Allows updates from Sanity to appear without a full rebuild
+export const revalidate = 60;
+
+// --- HELPER COMPONENTS (for rendering specific sections) ---
+// Note: In a larger app, move these to a dedicated 'components' folder
+
+const FeatureSection: React.FC<{ features: FeatureItem[] | undefined }> = ({ features }) => {
+    if (!features || features.length === 0) return null; // Render nothing if no features
+    return (
+        <section style={{ margin: '30px 0' }}>
+            <h2>Key Features & Benefits</h2>
+            <div style={{ display: 'grid', gap: '20px', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                {features.map((feature) => (
+                    <div key={feature._key} style={{ border: '1px solid #ddd', padding: '15px 20px', borderRadius: '5px', background: '#fff' }}>
+                        <h3 style={{ marginTop: 0, fontSize: '1.1em' }}>{feature.title}</h3>
+                        <p style={{ fontSize: '0.95em', lineHeight: '1.6' }}>{feature.description}</p>
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+const ComparisonSection: React.FC<{ points: ComparisonPoint[] | undefined }> = ({ points }) => {
+    if (!points || points.length === 0) return null;
+    return (
+        <section style={{ margin: '30px 0' }}>
+            <h2>How We Compare</h2>
+            <div style={{ overflowX: 'auto', border: '1px solid #ddd', borderRadius: '5px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '500px' }}>
+                    <thead>
+                        <tr style={{ background: '#f2f2f2' }}>
+                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>Feature</th>
+                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>This Tool</th>
+                            <th style={{ borderBottom: '1px solid #ddd', padding: '10px 12px', textAlign: 'left' }}>US Alternative</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {points.map((point) => (
+                            <tr key={point._key} style={{ borderTop: '1px solid #eee'}}>
+                                <td style={{ padding: '10px 12px', fontWeight: '500' }}>{point.featureName}</td>
+                                <td style={{ padding: '10px 12px' }}>{point.euToolValue}</td>
+                                <td style={{ padding: '10px 12px' }}>{point.usToolValue}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    );
+}
+
+const PricingSection: React.FC<{ tiers: PricingTier[] | undefined }> = ({ tiers }) => {
+    if (!tiers || tiers.length === 0) return null;
+    return (
+        <section style={{ margin: '30px 0', background: '#f8f9fa', padding: '30px 20px', borderRadius: '8px' }}>
+            <h2 style={{ textAlign: 'center', marginBottom: '25px' }}>Pricing Plans</h2>
+             <div style={{ display: 'grid', gap: '25px', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+                {tiers.map((tier) => (
+                    <div key={tier._key} style={{ border: '1px solid #ccc', padding: '25px', background: 'white', borderRadius: '8px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+                        <h3 style={{ marginTop: 0, textAlign: 'center', minHeight: '2.5em', color: '#333' }}>{tier.name}</h3>
+                        <p style={{ fontSize: '1.8em', fontWeight: 'bold', textAlign: 'center', margin: '10px 0', color: '#007bff' }}>{tier.price}</p>
+                        <ul style={{ flexGrow: 1, paddingLeft: '20px', marginBottom: '25px', fontSize: '0.9em', color: '#555' }}>
+                            {tier.featuresList?.map((feature, index) => <li key={index} style={{ marginBottom: '8px'}}>{feature}</li>)}
+                        </ul>
+                        <button style={{ padding: '12px 20px', background: '#007bff', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: 'auto', fontWeight: 'bold', fontSize: '1em', transition: 'background-color 0.2s ease' }}>
+                            {tier.ctaText || 'Get Started'}
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </section>
+    )
+}
+
+// --- Shared Content Components ---
+const AboutUsSection: React.FC<{ content: string | undefined }> = ({ content }) => {
+    if (!content) return null;
+    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#f9f9f9', borderRadius: '5px' }}><h2>About Us (Shared)</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+};
+
+const TestimonialsSection: React.FC<{ testimonials: string[] | undefined }> = ({ testimonials }) => {
+    if (!testimonials || testimonials.length === 0) return null;
+    return (
+        <section style={{ margin: '30px 0', padding: '20px', background: '#f0f0f0', borderRadius: '5px' }}>
+            <h2 style={{ marginBottom: '15px' }}>What Our Customers Say (Shared)</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                {testimonials.map((testimonial, index) => (
+                    <blockquote key={index} style={{ borderLeft: '4px solid #007bff', paddingLeft: '15px', margin: 0, fontStyle: 'italic', color: '#444' }}>
+                       "{testimonial}"
+                    </blockquote>
+                 ))}
+            </div>
+        </section>
+    );
+};
+
+const WhyEuSection: React.FC<{ content: string | undefined }> = ({ content }) => {
+    if (!content) return null;
+    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#eaf6ff', border: '1px solid #bde0ff', borderRadius: '5px' }}><h2>Why Choose the EU Version?</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+};
+
+const GdprFocusSection: React.FC<{ content: string | undefined }> = ({ content }) => {
+   if (!content) return null;
+    return ( <section style={{ margin: '30px 0', padding: '20px', background: '#fff8e1', border: '1px solid #ffecb3', borderRadius: '5px' }}><h2>GDPR Compliance Focus</h2><p style={{lineHeight: '1.6'}}>{content}</p></section> );
+};
+
+ const LogosSection: React.FC<{ logos: ImageWithAlt[] | undefined }> = ({ logos }) => {
+    if (!logos || logos.length === 0) return null;
+    return (
+        <section style={{ margin: '30px 0', padding: '25px 15px', textAlign: 'center', background: '#f8f9fa', borderRadius: '5px' }}>
+            <h2 style={{ marginBottom: '25px', color: '#6c757d', fontSize: '1.1em', fontWeight: '500' }}>Trusted By Leading EU Businesses</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '30px 40px', alignItems: 'center' }}>
+                {logos.map((logo) => logo.asset ? (
+                    <div key={logo._key} style={{ height: '50px', display: 'flex', alignItems: 'center' }}>
+                         <Image
+                            src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
+                            alt={logo.alt || 'Customer logo'}
+                            width={160}
+                            height={50}
+                            style={{ objectFit: 'contain', filter: 'grayscale(100%)', opacity: '0.7' }} // Example styling
+                         />
+                     </div>
+                ) : null)}
+             </div>
+         </section>
+     );
+};
+
+// --- Data Fetching Function for Static Generation ---
+// Tells Next.js which '/tools/[slug]' pages to generate at build time
+export async function generateStaticParams() {
+    // Query Sanity for the slugs of all published 'tool' documents
+    const query = `*[_type == "tool" && defined(slug.current)][].slug.current`;
+    const slugs = await client.fetch<string[]>(query);
+
+    // Return an array of objects, where each object has the required 'slug' parameter
+    return slugs.map((slug) => ({
+        slug: slug, // The key 'slug' matches the dynamic segment name '[slug]'
+    }));
+}
+
+// --- MAIN PAGE COMPONENT (React Server Component) ---
+// This component fetches data and renders the page for a specific tool
+export default async function ToolPage({ params }: ToolPageProps) {
+    const slug = params.slug; // Extract the slug from the URL parameters
+
+    // --- GROQ Query to Fetch Tool Data ---
+    // Selects the single document of type 'tool' matching the current slug.
+    // Uses projections `{...}` to specify needed fields and `asset->` to get image details.
+    const toolQuery = `*[_type == "tool" && slug.current == $slug][0]{
+        _id, name, tagline, slug, primaryCTAText, secondaryCTAText, uniqueDescription,
+        heroImage{alt, asset->{_id, url, metadata { dimensions }}},
+        uniqueFeatures[]{_key, title, description},
+        comparisonPoints[]{_key, featureName, euToolValue, usToolValue},
+        pricingTiers[]{_key, name, price, featuresList, ctaText}
+    }`;
+
+    // --- Fetch Tool-Specific and Common Content Concurrently ---
+    const [tool, commonContent] = await Promise.all([
+        client.fetch<Tool | null>(toolQuery, { slug }), // Fetch the specific tool (or null if not found)
+        getCommonContent(), // Fetch the shared common content document
+    ]);
+
+    // --- Handle Not Found Case ---
+    // If no tool data was returned for the given slug, render the 404 page
+    if (!tool) {
+        notFound();
+    }
+
+    // --- Render the Page JSX ---
+    return (
+        // Main container - Apply max-width and padding
+        // Replace inline styles with CSS classes for production
+        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '1rem 2rem' }}>
+
+            {/* --- Hero Section --- */}
+            <section style={{ textAlign: 'center', padding: '40px 0', borderBottom: '1px solid #eee', marginBottom: '40px' }}>
+                <h1>{tool.name}</h1>
+                {tool.tagline && <p style={{ fontSize: '1.25em', color: '#555', marginTop: '0.5rem', marginBottom: '25px' }}>{tool.tagline}</p>}
+
+                {/* Hero Image - Render only if asset exists */}
+                {tool.heroImage?.asset && (
+                    <div style={{ margin: '25px auto', position: 'relative', width: '100%', maxWidth: '750px', aspectRatio: '16/9', background: '#f0f0f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                         <Image
+                            src={urlFor(tool.heroImage).width(1000).quality(85).auto('format').url()}
+                            alt={tool.heroImage.alt || `${tool.name} hero image`}
+                            layout="fill"
+                            objectFit="contain" // Use 'cover' if you want it to fill the box
+                            priority // Load LCP image faster
+                         />
+                     </div>
+                )}
+
+                {/* CTAs */}
+                <div style={{ marginTop: '30px' }}>
+                    {tool.primaryCTAText && (
+                        <button style={{ padding: '12px 28px', fontSize: '1.1em', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', marginRight: '10px', marginBottom: '10px', fontWeight: 'bold' }}>
+                            {tool.primaryCTAText}
+                        </button>
+                    )}
+                     {tool.secondaryCTAText && (
+                        <button style={{ padding: '11px 25px', fontSize: '1.05em', background: 'transparent', color: '#007bff', border: '2px solid #007bff', borderRadius: '5px', cursor: 'pointer', marginBottom: '10px', fontWeight: 'bold' }}>
+                            {tool.secondaryCTAText}
+                        </button>
+                    )}
+                </div>
+            </section>
+
+             {/* --- Overview/Description Section --- */}
+             {tool.uniqueDescription && (
+                <section style={{ margin: '40px 0', lineHeight: '1.7', fontSize: '1.05em' }}>
+                    <h2>Overview</h2>
+                    <p>{tool.uniqueDescription}</p>
+                </section>
+             )}
+
+             {/* --- Render Shared Why EU / GDPR --- */}
+             <WhyEuSection content={commonContent?.whyEu} />
+             <GdprFocusSection content={commonContent?.gdprFocus} />
+
+            {/* --- Render Sections Using Helper Components --- */}
+            <FeatureSection features={tool.uniqueFeatures} />
+            <ComparisonSection points={tool.comparisonPoints} />
+            <LogosSection logos={commonContent?.globalCustomerLogos} />
+            <TestimonialsSection testimonials={commonContent?.globalTestimonials} />
+            <PricingSection tiers={tool.pricingTiers} />
+            <AboutUsSection content={commonContent?.aboutUs} />
+
+            {/* --- Final CTA --- */}
+             <section style={{ textAlign: 'center', padding: '50px 20px', marginTop: '40px', borderTop: '1px solid #eee', background: '#f8f9fa', borderRadius: '5px' }}>
+                 <h2 style={{ marginBottom: '15px' }}>Ready to Experience {tool.name} in the EU?</h2>
+                 <p style={{maxWidth: '600px', margin: '0 auto 25px auto', color: '#555'}}>Get started today and enjoy the benefits of EU-hosted software.</p>
+                  {tool.primaryCTAText && (
+                        <button style={{ padding: '14px 35px', fontSize: '1.2em', background: '#28a745', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
+                            {tool.primaryCTAText}
+                        </button>
+                    )}
+             </section>
+
+        </div> // End main container
+    );
+} // End ToolPage Component
+
+================
+File: app/globals.css
+================
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+================
+File: app/layout.tsx
+================
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Create Next App",
+  description: "Generated by create next app",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}
+
+================
+File: app/page.tsx
+================
+// app/page.tsx
+import Link from 'next/link';
+import { client, type Tool } from '../lib/sanity'; // Import client and Tool type
+
+// Revalidate the page every 60 seconds (ISR)
+// App Router equivalent of revalidate in getStaticProps
+export const revalidate = 60;
+
+// This is a React Server Component (RSC) - the default in App Router
+export default async function HomePage() {
+  // Fetch data directly within the Server Component
+  const query = `*[_type == "tool" && defined(slug.current)]{
+    _id,
+    name,
+    tagline,
+    slug
+  }`;
+  const tools = await client.fetch<Tool[]>(query);
+
+  return (
+    <div style={{ padding: '2rem' }}>
+      <h1>EU Software Clones</h1>
+      <p>Your one-stop directory for EU-based alternatives to popular US tools.</p>
+      <hr style={{ margin: '1rem 0' }} />
+
+      <h2>Available Tools:</h2>
+      {tools?.length > 0 ? (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {tools.map((tool) => (
+            <li key={tool._id} style={{ marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+              <Link href={`/tools/${tool.slug.current}`}>
+                {/* No <a> tag needed inside Link in newer Next.js versions */}
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', color: 'blue' }}>
+                  {tool.name}
+                </span>
+              </Link>
+              {tool.tagline && <p style={{ margin: '0.25rem 0 0 0', color: '#555' }}>{tool.tagline}</p>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No tools found. Add some in your Sanity Studio!</p>
+      )}
+    </div>
+  );
+}
+
+================
+File: lib/sanity.ts
+================
+// lib/sanity.ts
+import { createClient, type ClientConfig } from '@sanity/client';
+import imageUrlBuilder from '@sanity/image-url'; // Import image URL builder
+import type { Image, Slug } from '@sanity/types'; // Import specific Sanity types
+
+// --- INTERFACES matching your updated Sanity Schemas ---
+
+// Interface for Sanity Image object with the 'alt' field
+export interface ImageWithAlt extends Image {
+    alt?: string;
+}
+
+// Interface for the objects inside the 'uniqueFeatures' array in 'tool' schema
+export interface FeatureItem {
+    _key: string; // Automatically added by Sanity for array items
+    title?: string;
+    description?: string;
+}
+
+// Interface for the objects inside the 'comparisonPoints' array in 'tool' schema
+export interface ComparisonPoint {
+    _key: string;
+    featureName?: string;
+    euToolValue?: string;
+    usToolValue?: string;
+}
+
+// Interface for the objects inside the 'pricingTiers' array in 'tool' schema
+export interface PricingTier {
+    _key: string;
+    name?: string;
+    price?: string;
+    featuresList?: string[];
+    ctaText?: string;
+}
+
+// --- Updated CommonContent Interface (matches commonContent.ts schema) ---
+export interface CommonContent {
+  _type: 'commonContent'; // Document type
+  _id: string; // Document ID
+  aboutUs?: string;
+  whyEu?: string;
+  gdprFocus?: string; // Added field
+  globalTestimonials?: string[];
+  globalCustomerLogos?: ImageWithAlt[]; // Added field (array of images with alt)
+}
+
+// --- Updated Tool Interface (matches tool.ts schema) ---
+export interface Tool {
+    _id: string; // Document ID
+    _type: 'tool'; // Document type
+    name: string; // Required field
+    tagline?: string;
+    slug: Slug; // Use the imported Slug type
+    heroImage?: ImageWithAlt; // Added field
+    primaryCTAText?: string; // Added field
+    secondaryCTAText?: string; // Added field
+    uniqueDescription?: string;
+    uniqueFeatures?: FeatureItem[]; // Updated field (array of FeatureItem objects)
+    comparisonPoints?: ComparisonPoint[]; // Added field
+    pricingTiers?: PricingTier[]; // Added field
+}
+
+// --- Sanity Client Configuration ---
+const config: ClientConfig = {
+  // Ensure NEXT_PUBLIC_SANITY_PROJECT_ID is set in your .env.local file
+  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production', // Default to 'production'
+  // Use CDN only in production environments (typically in the browser)
+  useCdn: typeof document !== 'undefined' && process.env.NODE_ENV === 'production',
+  apiVersion: '2023-05-03', // Use a recent API version date
+  // token: process.env.SANITY_API_READ_TOKEN // Add this for private datasets
+};
+
+// Runtime check to ensure projectId is configured
+if (!config.projectId) {
+  throw new Error(
+    "Configuration Error: The environment variable NEXT_PUBLIC_SANITY_PROJECT_ID is missing or invalid. Please check your .env.local file."
+  );
+}
+
+// --- Export configured Sanity Client ---
+export const client = createClient(config);
+
+// --- Image URL Builder Helper ---
+const builder = imageUrlBuilder(client);
+
+// Helper function to generate image URLs from Sanity image objects
+// Usage: urlFor(sanityImageObject).width(300).url()
+export function urlFor(source: Image) { // Takes a Sanity 'Image' object
+    return builder.image(source);
+}
+
+// --- Helper function to fetch the singleton Common Content document ---
+export async function getCommonContent(): Promise<CommonContent | null> {
+  // Fetches the first document of type 'commonContent'.
+  // Using '...' fetches all top-level fields defined in the interface.
+  const query = `*[_type == "commonContent"][0]{
+      ...,
+      // Explicitly expand image references if needed immediately,
+      // otherwise urlFor handles fetching based on the reference.
+      // Example: globalCustomerLogos[]{..., asset->}
+    }`;
+  try {
+    const commonData = await client.fetch<CommonContent>(query);
+    return commonData;
+  } catch (error) {
+    console.error("Error fetching common content from Sanity:", error);
+    return null; // Return null or handle the error appropriately
+  }
+}
+
+================
+File: public/file.svg
+================
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+
+================
+File: public/globe.svg
+================
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+
+================
+File: public/next.svg
+================
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+
+================
+File: public/vercel.svg
+================
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+
+================
+File: public/window.svg
+================
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+
+================
+File: .gitignore
+================
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+================
+File: eslint.config.mjs
+================
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+import { FlatCompat } from "@eslint/eslintrc";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+];
+
+export default eslintConfig;
+
+================
+File: next.config.ts
+================
+// next.config.ts
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true, // Or your existing configuration
+  // swcMinify: true, // Example other config
+
+  // --- ADD THIS BLOCK ---
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.sanity.io',
+        port: '', // Keep empty unless Sanity uses a specific port (it doesn't)
+        // You could optionally add a pathname pattern here if needed,
+        // but usually just the hostname is sufficient for Sanity.
+        // pathname: '/images/your-project-id/**',
+      },
+    ],
+    // --- OR (older method, less flexible) ---
+    // domains: ['cdn.sanity.io'],
+  },
+  // --- END BLOCK ---
+
+  // ... any other existing configuration
+};
+
+export default nextConfig;
+
+================
+File: package.json
+================
+{
+  "name": "nextjs-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@sanity/client": "^6.28.4",
+    "@sanity/image-url": "^1.1.0",
+    "next": "15.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.4",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.0.17",
+    "typescript": "^5"
+  }
+}
+
+================
+File: postcss.config.mjs
+================
+const config = {
+  plugins: ["@tailwindcss/postcss"],
+};
+
+export default config;
+
+================
+File: README.md
+================
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+================
+File: tsconfig.json
+================
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+
+
+
+================================================================
+End of Codebase
+================================================================
