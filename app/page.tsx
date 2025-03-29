@@ -1,7 +1,7 @@
 // app/page.tsx
 import Link from 'next/link';
 import Image from 'next/image';
-import { client, type Tool } from '../lib/sanity';
+import { client, urlFor, type Tool } from '../lib/sanity';
 
 export const revalidate = 60;
 
@@ -76,7 +76,7 @@ export default async function HomePage() {
                   <div className="h-40 bg-gray-100 relative">
                     {tool.heroImage?.asset ? (
                       <Image
-                        src={tool.heroImage.asset.url}
+                        src={urlFor(tool.heroImage.asset).url()}
                         alt={tool.heroImage.alt || tool.name}
                         fill
                         className="object-cover"
@@ -175,7 +175,7 @@ export default async function HomePage() {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link 
-              href="/tools" a
+              href="/tools" 
               className="px-8 py-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
             >
               Browse All Tools
