@@ -76,7 +76,7 @@ export default async function HomePage() {
                   <div className="h-40 bg-gray-100 relative">
                     {tool.heroImage?.asset ? (
                       <Image
-                        src={urlFor(tool.heroImage.asset).url()}
+                        src={urlFor(tool.heroImage).url()}
                         alt={tool.heroImage.alt || tool.name}
                         fill
                         className="object-cover"
