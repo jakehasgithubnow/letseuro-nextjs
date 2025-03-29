@@ -311,5 +311,3 @@ export default async function ToolPage({ params }: { params: { slug: string } })
     );
   }
 }
-
-//test - is this getting to github?
