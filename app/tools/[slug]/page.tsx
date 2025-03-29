@@ -9,7 +9,6 @@ import {
   client,
   getCommonContent,
   urlFor,
-  type CommonContent,
   type Tool,
   type FeatureItem,
   type ComparisonPoint,
@@ -123,7 +122,7 @@ const TestimonialsSection: React.FC<{ testimonials: string[] | undefined }> = ({
       <div className="space-y-6">
         {testimonials.map((testimonial, index) => (
           <blockquote key={index} className="border-l-4 border-blue-500 pl-4 italic text-gray-700">
-       &quot;{testimonial}&quot;
+            &quot;{testimonial}&quot;
           </blockquote>
         ))}
       </div>
@@ -182,7 +181,7 @@ export async function generateStaticParams() {
   }));
 }
 
-export default async function ToolPage({ params }: ToolPageProps) {
+export default async function ToolPage({ params }: { params: { slug: string } }) {
   const slug = params.slug;
 
   try {
