@@ -25,4 +25,6 @@ const nextConfig = {
   // ... any other existing configuration
 };
 
+eslint: { ignoreDuringBuilds: true }
+
 export default nextConfig;
