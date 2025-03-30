@@ -4,29 +4,27 @@ import { SanityDocument } from "next-sanity";
 import { sanityClient, urlFor } from "@/lib/sanity";
 import { PortableText } from "@portabletext/react";
 import Image from 'next/image';
-// Removed incorrect default import for urlFor as it's now imported above
-import FeatureComparison from '@/app/components/FeatureComparison'; // Import the component
+import FeatureComparison from '@/app/components/FeatureComparison';
 
 // Define the expected structure for the tool page data
 interface ToolPageData extends SanityDocument {
   title?: string;
   description?: string;
   slug?: { current?: string };
-  mainImage?: any; // Replace 'any' with a more specific type if available
-  body?: any[]; // Portable Text content
-  features?: any[]; // Adjust type based on your feature structure
-  comparisonTable?: any; // Adjust type based on your comparison table structure
+  mainImage?: any;
+  body?: any[];
+  features?: any[];
+  comparisonTable?: any;
   customerLogos?: {
     title?: string;
-    logos?: Logo[]; // Use the Logo interface here
+    logos?: Logo[];
   };
-  // Add other fields as necessary
 }
 
 // Define the structure for a single logo
 interface Logo {
-  _key: string; // Sanity adds this key to array items
-  asset?: any; // Replace 'any' with a specific Sanity image asset type if possible
+  _key: string;
+  asset?: any;
   alt?: string;
 }
 
@@ -43,20 +41,18 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
     mainImage,
     body,
     features,
-    comparisonTable,
+    // comparisonTable, // Uncomment if used
     customerLogos
   } = data;
 
   const logos = customerLogos?.logos || [];
 
-  // Function to resolve Portable Text components (optional, customize as needed)
   const ptComponents = {
     types: {
       image: ({ value }: { value: any }) => {
         if (!value?.asset?._ref) {
           return null;
         }
-        // Use the correctly imported urlFor
         const imageUrl = urlFor(value).width(800).height(600).fit('max').auto('format').url();
         return (
           <Image
@@ -65,7 +61,7 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
             loading="lazy"
             width={800}
             height={600}
-            className="my-4 rounded-md shadow-lg" // Added some styling
+            className="my-4 rounded-md shadow-lg"
           />
         );
       },
@@ -105,13 +101,12 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
 
       {mainImage && (
         <div className="mb-8 shadow-lg rounded-lg overflow-hidden">
-          {/* Use the correctly imported urlFor */}
           <Image
             src={urlFor(mainImage).width(1200).height(600).fit('crop').auto('format').url()}
-            alt={title} // Use page title as alt text fallback
+            alt={title}
             width={1200}
             height={600}
-            priority // Load main image eagerly
+            priority
             className="w-full h-auto"
           />
         </div>
@@ -145,7 +140,6 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
           <div className="flex flex-wrap justify-center items-center gap-10">
             {logos.map((logo) => logo.asset ? (
               <div key={logo._key as string} className="h-14 flex items-center">
-                {/* Use the correctly imported urlFor */}
                 <Image
                   src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
                   alt={logo.alt || 'Customer logo'}
@@ -178,23 +172,17 @@ const TOOL_PAGE_QUERY = `*[_type == "toolPage" && slug.current == $slug][0]{
   },
 }`;
 
-interface PageProps {
-  params: { slug: string };
-}
+// Removed separate PageProps interface
+// export default async function ToolPage({ params }: PageProps) { // Old version
 
-export default async function ToolPage({ params }: PageProps) {
-  // Corrected: Use sanityClient.fetch to execute the query
+// FIX: Use inline type for props directly in the function signature
+export default async function ToolPage({ params }: { params: { slug: string } }) {
   const data = await sanityClient.fetch<ToolPageData>(
     TOOL_PAGE_QUERY,
     { slug: params.slug },
-    // Note: The third argument for tags might differ depending on your exact sanityClient setup.
-    // If your original sanityFetch function handled tags specifically, you might need to adjust.
-    // Standard fetch often uses { next: { tags: [...] } } or similar.
-    // Check your sanityClient configuration or documentation if caching/tags are critical.
-    // For now, assuming basic fetch:
-    // { next: { tags: [`toolPage:${params.slug}`] } } // Example if using Next.js App Router fetch extension
+    // Add caching/tag options if needed, e.g.:
+    // { next: { tags: [`toolPage:${params.slug}`] } }
   );
-
 
   if (!data) {
     return <div className="container mx-auto px-4 py-8 text-center">Tool page not found.</div>;
