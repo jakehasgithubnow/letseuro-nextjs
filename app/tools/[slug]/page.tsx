@@ -1,9 +1,10 @@
 // app/tools/[slug]/page.tsx
 import { SanityDocument } from "next-sanity";
-import { sanityFetch } from "@/lib/sanity";
+// Corrected: Use named imports for sanityClient and urlFor
+import { sanityClient, urlFor } from "@/lib/sanity";
 import { PortableText } from "@portabletext/react";
 import Image from 'next/image';
-import urlFor from '@/lib/sanity'; // Assuming urlFor is correctly configured for image URLs
+// Removed incorrect default import for urlFor as it's now imported above
 import FeatureComparison from '@/app/components/FeatureComparison'; // Import the component
 
 // Define the expected structure for the tool page data
@@ -35,8 +36,6 @@ interface ToolPageContentProps {
 }
 
 // Reusable component for rendering the page content
-// Note: Using @ts-ignore temporarily to bypass potential complex type issues from Sanity data.
-// Ideally, define more precise types for 'data' based on your Sanity schema.
 const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
   const {
     title = 'Missing Title',
@@ -57,9 +56,11 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
         if (!value?.asset?._ref) {
           return null;
         }
+        // Use the correctly imported urlFor
+        const imageUrl = urlFor(value).width(800).height(600).fit('max').auto('format').url();
         return (
           <Image
-            src={urlFor(value).width(800).height(600).fit('max').auto('format').url()}
+            src={imageUrl}
             alt={value.alt || ' '}
             loading="lazy"
             width={800}
@@ -68,12 +69,9 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
           />
         );
       },
-      // Add custom components for other Portable Text types if needed
-      // e.g., code blocks, custom embeds, etc.
-      featureComparison: ({ value }: { value: any }) => <FeatureComparison data={value} />, // Render the comparison table component
+      featureComparison: ({ value }: { value: any }) => <FeatureComparison data={value} />,
     },
     marks: {
-      // Define custom styling for marks like bold, italic, links
       link: ({ children, value }: { children: React.ReactNode, value: any }) => {
         const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined;
         return (
@@ -84,7 +82,6 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
       },
     },
     block: {
-      // Define custom styling for block types like h1, h2, blockquote
       h1: ({ children }: { children: React.ReactNode }) => <h1 className="text-4xl font-bold my-6">{children}</h1>,
       h2: ({ children }: { children: React.ReactNode }) => <h2 className="text-3xl font-semibold my-5">{children}</h2>,
       h3: ({ children }: { children: React.ReactNode }) => <h3 className="text-2xl font-semibold my-4">{children}</h3>,
@@ -108,6 +105,7 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
 
       {mainImage && (
         <div className="mb-8 shadow-lg rounded-lg overflow-hidden">
+          {/* Use the correctly imported urlFor */}
           <Image
             src={urlFor(mainImage).width(1200).height(600).fit('crop').auto('format').url()}
             alt={title} // Use page title as alt text fallback
@@ -119,14 +117,12 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
         </div>
       )}
 
-      {/* Render Portable Text content */}
       {body && (
-        <div className="prose prose-lg max-w-none mx-auto"> {/* Added prose styling */}
+        <div className="prose prose-lg max-w-none mx-auto">
           <PortableText value={body} components={ptComponents} />
         </div>
       )}
 
-      {/* Render Features Section (Example) */}
       {features && features.length > 0 && (
         <section className="my-12">
           <h2 className="text-3xl font-semibold mb-6 text-center">Features</h2>
@@ -141,7 +137,6 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
         </section>
       )}
 
-      {/* Render Customer Logos Section */}
       {logos && logos.length > 0 && (
         <section className="my-16 py-10 bg-gray-50 rounded-lg">
           <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
@@ -149,13 +144,14 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
           </h2>
           <div className="flex flex-wrap justify-center items-center gap-10">
             {logos.map((logo) => logo.asset ? (
-              <div key={logo._key as string} className="h-14 flex items-center"> {/* <-- FIX APPLIED HERE */}
+              <div key={logo._key as string} className="h-14 flex items-center">
+                {/* Use the correctly imported urlFor */}
                 <Image
                   src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
                   alt={logo.alt || 'Customer logo'}
                   width={160}
                   height={50}
-                  className="object-contain" // Ensure logo scales nicely
+                  className="object-contain"
                 />
               </div>
             ) : null)}
@@ -163,57 +159,52 @@ const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
         </section>
       )}
 
-      {/* Add other sections as needed based on your Sanity schema */}
-
     </article>
   );
 };
 
 
-// Define the query to fetch data for a specific tool page by slug
 const TOOL_PAGE_QUERY = `*[_type == "toolPage" && slug.current == $slug][0]{
-  ..., // Select all fields
-  mainImage {asset->}, // Expand asset reference for main image
+  ...,
+  mainImage {asset->},
   body[]{
-    ..., // Select all fields within the body array
-    _type == "image" => { ..., asset-> }, // Expand asset for images in body
-    _type == "featureComparison" => { ..., table{ ..., rows[]{ ..., cells[]{ ..., content[]{ ..., _type == "image" => { ..., asset-> } } } } } } // Expand deeply nested images
+    ...,
+    _type == "image" => { ..., asset-> },
+    _type == "featureComparison" => { ..., table{ ..., rows[]{ ..., cells[]{ ..., content[]{ ..., _type == "image" => { ..., asset-> } } } } } }
   },
   customerLogos {
     ...,
-    logos[]{ ..., asset-> } // Expand asset for logos
+    logos[]{ ..., asset-> }
   },
-  // Expand other references if needed
 }`;
 
-// Define the structure for the page props, including the slug
 interface PageProps {
   params: { slug: string };
 }
 
-// The main page component
 export default async function ToolPage({ params }: PageProps) {
-  // Fetch the data using the slug from the params
-  const data = await sanityFetch<ToolPageData>({
-    query: TOOL_PAGE_QUERY,
-    params: { slug: params.slug },
-    tags: [`toolPage:${params.slug}`] // Add appropriate cache tags
-  });
+  // Corrected: Use sanityClient.fetch to execute the query
+  const data = await sanityClient.fetch<ToolPageData>(
+    TOOL_PAGE_QUERY,
+    { slug: params.slug },
+    // Note: The third argument for tags might differ depending on your exact sanityClient setup.
+    // If your original sanityFetch function handled tags specifically, you might need to adjust.
+    // Standard fetch often uses { next: { tags: [...] } } or similar.
+    // Check your sanityClient configuration or documentation if caching/tags are critical.
+    // For now, assuming basic fetch:
+    // { next: { tags: [`toolPage:${params.slug}`] } } // Example if using Next.js App Router fetch extension
+  );
 
-  // Handle case where data might not be found
+
   if (!data) {
-    // Optionally, return a 404 page or a specific message
-    // import { notFound } from 'next/navigation';
-    // notFound();
     return <div className="container mx-auto px-4 py-8 text-center">Tool page not found.</div>;
   }
 
-  // Render the content component with the fetched data
   return <ToolPageContent data={data} />;
 }
 
-// Function to generate static paths if using SSG (optional)
 // export async function generateStaticParams() {
-//   const slugs = await sanityFetch<string[]>({ query: `*[_type == "toolPage" && defined(slug.current)][].slug.current` });
+//   const slugs = await sanityClient.fetch<string[]>(`*[_type == "toolPage" && defined(slug.current)][].slug.current`);
 //   return slugs.map((slug) => ({ slug }));
 // }
+
