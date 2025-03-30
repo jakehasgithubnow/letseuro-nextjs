@@ -196,4 +196,3 @@ export default async function ToolPage({ params }: { params: { slug: string } })
 //   return slugs.map((slug) => ({ slug }));
 // }
 
-//IS this working? yes
