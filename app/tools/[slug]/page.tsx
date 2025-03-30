@@ -1,332 +1,219 @@
 // app/tools/[slug]/page.tsx
-
+import { SanityDocument } from "next-sanity";
+import { sanityFetch } from "@/lib/sanity";
+import { PortableText } from "@portabletext/react";
 import Image from 'next/image';
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import FeatureComparison from '../../components/FeatureComparison';
+import urlFor from '@/lib/sanity'; // Assuming urlFor is correctly configured for image URLs
+import FeatureComparison from '@/app/components/FeatureComparison'; // Import the component
 
-import {
-  client,
-  getCommonContent,
-  urlFor,
-  type Tool,
-  type FeatureItem,
-  type ComparisonPoint,
-  type PricingTier,
-  type ImageWithAlt
-} from '../../../lib/sanity';
-
-export const revalidate = 60;
-
-const FeatureSection: React.FC<{ features: FeatureItem[] | undefined }> = ({ features }) => {
-  if (!features || features.length === 0) return null;
-  return (
-    <section className="my-12">
-      <h2 className="text-3xl font-bold mb-8">Key Features & Benefits</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {features.map((feature) => (
-          <div key={feature._key} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-            <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-            <p className="text-gray-600 leading-relaxed">{feature.description}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+// Define the expected structure for the tool page data
+interface ToolPageData extends SanityDocument {
+  title?: string;
+  description?: string;
+  slug?: { current?: string };
+  mainImage?: any; // Replace 'any' with a more specific type if available
+  body?: any[]; // Portable Text content
+  features?: any[]; // Adjust type based on your feature structure
+  comparisonTable?: any; // Adjust type based on your comparison table structure
+  customerLogos?: {
+    title?: string;
+    logos?: Logo[]; // Use the Logo interface here
+  };
+  // Add other fields as necessary
 }
 
-const ComparisonSection: React.FC<{ 
-  points: ComparisonPoint[] | undefined,
-  toolName: string,
-  usAlternativeName?: string,
-  comparisonTitle?: string,
-  comparisonSubtitle?: string,
-  comparisonTagline?: string
-}> = ({ 
-  points, 
-  toolName, 
-  usAlternativeName,
-  comparisonTitle,
-  comparisonSubtitle,
-  comparisonTagline
-}) => {
-  if (!points || points.length === 0) return null;
-  
-  return (
-    <FeatureComparison 
-      comparisonPoints={points} 
-      toolName={toolName}
-      usAlternativeName={usAlternativeName || 'US Alternative'} 
-      comparisonTitle={comparisonTitle}
-      comparisonSubtitle={comparisonSubtitle}
-      comparisonTagline={comparisonTagline}
-    />
-  );
-};
-
-const PricingSection: React.FC<{ tiers: PricingTier[] | undefined }> = ({ tiers }) => {
-  if (!tiers || tiers.length === 0) return null;
-  return (
-    <section className="my-12 bg-gray-50 py-12 px-6 rounded-xl">
-      <h2 className="text-3xl font-bold mb-10 text-center">Pricing Plans</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {tiers.map((tier) => (
-          <div key={tier._key} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-center mb-4">{tier.name}</h3>
-              <p className="text-4xl font-bold text-center text-blue-600 mb-6">{tier.price}</p>
-              <ul className="space-y-3 mb-8">
-                {tier.featuresList?.map((feature, index) => (
-                  <li key={index} className="flex items-start">
-                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-gray-600">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="mt-auto p-6 pt-0">
-              <button className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors">
-                {tier.ctaText || 'Get Started'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
+// Define the structure for a single logo
+interface Logo {
+  _key: string; // Sanity adds this key to array items
+  asset?: any; // Replace 'any' with a specific Sanity image asset type if possible
+  alt?: string;
 }
 
-const AboutUsSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-  if (!content) return null;
-  return (
-    <section className="my-12 bg-gray-50 p-8 rounded-lg">
-      <h2 className="text-3xl font-bold mb-4">About Us</h2>
-      <p className="text-gray-700 leading-relaxed">{content}</p>
-    </section>
-  );
-};
-
-const TestimonialsSection: React.FC<{ testimonials: string[] | undefined }> = ({ testimonials }) => {
-  if (!testimonials || testimonials.length === 0) return null;
-  return (
-    <section className="my-12 bg-gray-50 p-8 rounded-lg">
-      <h2 className="text-3xl font-bold mb-6">What Our Customers Say</h2>
-      <div className="space-y-6">
-        {testimonials.map((testimonial, index) => (
-          <blockquote key={index} className="border-l-4 border-blue-500 pl-4 italic text-gray-700">
-            &quot;{testimonial}&quot;
-          </blockquote>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-const WhyEuSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-  if (!content) return null;
-  return (
-    <section className="my-12 bg-blue-50 border border-blue-100 p-8 rounded-lg">
-      <h2 className="text-3xl font-bold mb-4">Why Choose the EU Version?</h2>
-      <p className="text-gray-700 leading-relaxed">{content}</p>
-    </section>
-  );
-};
-
-const GdprFocusSection: React.FC<{ content: string | undefined }> = ({ content }) => {
-  if (!content) return null;
-  return (
-    <section className="my-12 bg-amber-50 border border-amber-100 p-8 rounded-lg">
-      <h2 className="text-3xl font-bold mb-4">GDPR Compliance Focus</h2>
-      <p className="text-gray-700 leading-relaxed">{content}</p>
-    </section>
-  );
-};
-
-const LogosSection: React.FC<{ logos: ImageWithAlt[] | undefined }> = ({ logos }) => {
-  if (!logos || logos.length === 0) return null;
-  return (
-    <section className="my-12 py-10 px-6 bg-gray-50 rounded-lg text-center">
-      <h2 className="text-xl font-medium text-gray-500 mb-8">Trusted By Leading EU Businesses</h2>
-      <div className="flex flex-wrap justify-center items-center gap-10">
-        {logos.map((logo) => logo.asset ? (
-          <div key={logo._key} className="h-14 flex items-center">
-            <Image
-              src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
-              alt={logo.alt || 'Customer logo'}
-              width={160}
-              height={50}
-              className="object-contain grayscale opacity-70"
-            />
-          </div>
-        ) : null)}
-      </div>
-    </section>
-  );
-};
-
-export async function generateStaticParams() {
-  const query = `*[_type == "tool" && defined(slug.current)][].slug.current`;
-  const slugs = await client.fetch<string[]>(query);
-
-  return slugs.map((slug) => ({
-    slug: slug,
-  }));
+// Define the structure for the props expected by ToolPageContent
+interface ToolPageContentProps {
+  data: ToolPageData;
 }
 
-// Completely restructured page component to avoid the type issue
-export default function ToolPage(props: any) {
-  // Extract slug from params
-  const slug = props.params?.slug;
-  
-  // We'll use this for the async data fetching
-  const fetchToolData = async (slugParam: string) => {
-    const toolQuery = `*[_type == "tool" && slug.current == $slug][0]{
-      _id, name, tagline, slug, primaryCTAText, secondaryCTAText, uniqueDescription,
-      usAlternativeName,
-      comparisonTitle, comparisonSubtitle, comparisonTagline,
-      heroImage{alt, asset->{_id, url, metadata { dimensions }}},
-      uniqueFeatures[]{_key, title, description},
-      comparisonPoints[]{_key, featureName, euToolValue, usToolValue},
-      pricingTiers[]{_key, name, price, featuresList, ctaText}
-    }`;
+// Reusable component for rendering the page content
+// Note: Using @ts-ignore temporarily to bypass potential complex type issues from Sanity data.
+// Ideally, define more precise types for 'data' based on your Sanity schema.
+const ToolPageContent: React.FC<ToolPageContentProps> = ({ data }) => {
+  const {
+    title = 'Missing Title',
+    description = 'Missing Description',
+    mainImage,
+    body,
+    features,
+    comparisonTable,
+    customerLogos
+  } = data;
 
-    const [tool, commonContent] = await Promise.all([
-      client.fetch<Tool | null>(toolQuery, { slug: slugParam }),
-      getCommonContent(),
-    ]);
+  const logos = customerLogos?.logos || [];
 
-    if (!tool) {
-      notFound();
-    }
-
-    return { tool, commonContent };
+  // Function to resolve Portable Text components (optional, customize as needed)
+  const ptComponents = {
+    types: {
+      image: ({ value }: { value: any }) => {
+        if (!value?.asset?._ref) {
+          return null;
+        }
+        return (
+          <Image
+            src={urlFor(value).width(800).height(600).fit('max').auto('format').url()}
+            alt={value.alt || ' '}
+            loading="lazy"
+            width={800}
+            height={600}
+            className="my-4 rounded-md shadow-lg" // Added some styling
+          />
+        );
+      },
+      // Add custom components for other Portable Text types if needed
+      // e.g., code blocks, custom embeds, etc.
+      featureComparison: ({ value }: { value: any }) => <FeatureComparison data={value} />, // Render the comparison table component
+    },
+    marks: {
+      // Define custom styling for marks like bold, italic, links
+      link: ({ children, value }: { children: React.ReactNode, value: any }) => {
+        const rel = !value.href.startsWith('/') ? 'noreferrer noopener' : undefined;
+        return (
+          <a href={value.href} rel={rel} className="text-blue-600 hover:underline">
+            {children}
+          </a>
+        );
+      },
+    },
+    block: {
+      // Define custom styling for block types like h1, h2, blockquote
+      h1: ({ children }: { children: React.ReactNode }) => <h1 className="text-4xl font-bold my-6">{children}</h1>,
+      h2: ({ children }: { children: React.ReactNode }) => <h2 className="text-3xl font-semibold my-5">{children}</h2>,
+      h3: ({ children }: { children: React.ReactNode }) => <h3 className="text-2xl font-semibold my-4">{children}</h3>,
+      blockquote: ({ children }: { children: React.ReactNode }) => <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4">{children}</blockquote>,
+    },
+    list: {
+      bullet: ({ children }: { children: React.ReactNode }) => <ul className="list-disc list-inside my-4 ml-4">{children}</ul>,
+      number: ({ children }: { children: React.ReactNode }) => <ol className="list-decimal list-inside my-4 ml-4">{children}</ol>,
+    },
+    listItem: {
+      bullet: ({ children }: { children: React.ReactNode }) => <li className="mb-2">{children}</li>,
+      number: ({ children }: { children: React.ReactNode }) => <li className="mb-2">{children}</li>,
+    },
   };
 
-  // Using the Client Component approach without async/await directly on the component
-  // @ts-ignore - Suppress type errors for now to get the build working
+
   return (
-    <ToolPageContent slug={slug} fetchDataFunc={fetchToolData} />
-  );
-}
+    <article className="container mx-auto px-4 py-8">
+      <h1 className="text-4xl md:text-5xl font-extrabold mb-4 text-gray-900">{title}</h1>
+      {description && <p className="text-lg text-gray-600 mb-6">{description}</p>}
 
-// Separate component to handle the async data fetching
-async function ToolPageContent({ 
-  slug, 
-  fetchDataFunc 
-}: { 
-  slug: string;
-  fetchDataFunc: (slug: string) => Promise<{ tool: Tool, commonContent: any }>
-}) {
-  try {
-    // Fetch data
-    const { tool, commonContent } = await fetchDataFunc(slug);
-
-    return (
-      <div className="bg-white text-gray-900 min-h-screen">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          {/* Hero Section */}
-          <section className="mb-16">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-                  <span className="block">Everything you ever</span>
-                  <span className="text-orange-500">wanted to know</span>
-                  <span className="block">about {tool.name}</span>
-                </h1>
-                <p className="text-xl text-gray-600 mb-8">{tool.tagline}</p>
-                <div className="flex flex-wrap gap-4">
-                  {tool.primaryCTAText && (
-                    <button className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-                      {tool.primaryCTAText}
-                    </button>
-                  )}
-                  {tool.secondaryCTAText && (
-                    <button className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md border-2 border-blue-600 hover:bg-blue-50 transition-colors">
-                      {tool.secondaryCTAText}
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="rounded-xl overflow-hidden shadow-lg">
-                {tool.heroImage?.asset ? (
-                  <Image
-                    src={urlFor(tool.heroImage).width(600).height(400).auto('format').url()}
-                    alt={tool.heroImage.alt || `${tool.name} hero image`}
-                    width={600}
-                    height={400}
-                    className="w-full h-auto"
-                    priority
-                  />
-                ) : (
-                  <div className="bg-gray-100 w-full h-80 flex items-center justify-center">
-                    <p className="text-gray-400">Tool image</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {/* Overview/Description */}
-          {tool.uniqueDescription && (
-            <section className="my-12">
-              <h2 className="text-3xl font-bold mb-4">Overview</h2>
-              <p className="text-lg text-gray-700 leading-relaxed">{tool.uniqueDescription}</p>
-            </section>
-          )}
-
-          {/* EU & GDPR Sections */}
-          <WhyEuSection content={commonContent?.whyEu} />
-          <GdprFocusSection content={commonContent?.gdprFocus} />
-
-          {/* Features, Comparison & Other Sections */}
-          <FeatureSection features={tool.uniqueFeatures} />
-          
-          {/* Updated Comparison section with the tool name and US alternative name */}
-          <ComparisonSection 
-            points={tool.comparisonPoints} 
-            toolName={tool.name}
-            usAlternativeName={tool.usAlternativeName}
-            comparisonTitle={tool.comparisonTitle}
-            comparisonSubtitle={tool.comparisonSubtitle}
-            comparisonTagline={tool.comparisonTagline}
+      {mainImage && (
+        <div className="mb-8 shadow-lg rounded-lg overflow-hidden">
+          <Image
+            src={urlFor(mainImage).width(1200).height(600).fit('crop').auto('format').url()}
+            alt={title} // Use page title as alt text fallback
+            width={1200}
+            height={600}
+            priority // Load main image eagerly
+            className="w-full h-auto"
           />
-          
-          <LogosSection logos={commonContent?.globalCustomerLogos} />
-          <TestimonialsSection testimonials={commonContent?.globalTestimonials} />
-          <PricingSection tiers={tool.pricingTiers} />
-          <AboutUsSection content={commonContent?.aboutUs} />
-
-          {/* Final CTA */}
-          <section className="my-16 bg-gray-50 py-12 px-8 rounded-xl text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Experience {tool.name} in the EU?</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-              Get started today and enjoy the benefits of EU-hosted software.
-            </p>
-            {tool.primaryCTAText && (
-              <button className="px-8 py-4 text-xl bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-                {tool.primaryCTAText}
-              </button>
-            )}
-          </section>
         </div>
-      </div>
-    );
-  } catch (error) {
-    console.error("Error in ToolPageContent:", error);
-    return (
-      <div className="p-10 text-center">
-        <h2 className="text-2xl font-bold text-red-500 mb-4">
-          Error loading tool information
-        </h2>
-        <p className="text-gray-600 mb-6">
-          We encountered a problem fetching data for this tool. Please try again later.
-        </p>
-        <Link href="/" className="px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors">
-          Return to Home
-        </Link>
-      </div>
-    );
-  }
+      )}
+
+      {/* Render Portable Text content */}
+      {body && (
+        <div className="prose prose-lg max-w-none mx-auto"> {/* Added prose styling */}
+          <PortableText value={body} components={ptComponents} />
+        </div>
+      )}
+
+      {/* Render Features Section (Example) */}
+      {features && features.length > 0 && (
+        <section className="my-12">
+          <h2 className="text-3xl font-semibold mb-6 text-center">Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <div key={index} className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
+                <h3 className="text-xl font-semibold mb-2">{feature.title || 'Feature Title'}</h3>
+                <p className="text-gray-700">{feature.description || 'Feature description.'}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Render Customer Logos Section */}
+      {logos && logos.length > 0 && (
+        <section className="my-16 py-10 bg-gray-50 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-8 text-center text-gray-700">
+            {customerLogos?.title || "Trusted By"}
+          </h2>
+          <div className="flex flex-wrap justify-center items-center gap-10">
+            {logos.map((logo) => logo.asset ? (
+              <div key={logo._key as string} className="h-14 flex items-center"> {/* <-- FIX APPLIED HERE */}
+                <Image
+                  src={urlFor(logo.asset).width(160).height(50).fit('max').auto('format').url()}
+                  alt={logo.alt || 'Customer logo'}
+                  width={160}
+                  height={50}
+                  className="object-contain" // Ensure logo scales nicely
+                />
+              </div>
+            ) : null)}
+          </div>
+        </section>
+      )}
+
+      {/* Add other sections as needed based on your Sanity schema */}
+
+    </article>
+  );
+};
+
+
+// Define the query to fetch data for a specific tool page by slug
+const TOOL_PAGE_QUERY = `*[_type == "toolPage" && slug.current == $slug][0]{
+  ..., // Select all fields
+  mainImage {asset->}, // Expand asset reference for main image
+  body[]{
+    ..., // Select all fields within the body array
+    _type == "image" => { ..., asset-> }, // Expand asset for images in body
+    _type == "featureComparison" => { ..., table{ ..., rows[]{ ..., cells[]{ ..., content[]{ ..., _type == "image" => { ..., asset-> } } } } } } // Expand deeply nested images
+  },
+  customerLogos {
+    ...,
+    logos[]{ ..., asset-> } // Expand asset for logos
+  },
+  // Expand other references if needed
+}`;
+
+// Define the structure for the page props, including the slug
+interface PageProps {
+  params: { slug: string };
 }
+
+// The main page component
+export default async function ToolPage({ params }: PageProps) {
+  // Fetch the data using the slug from the params
+  const data = await sanityFetch<ToolPageData>({
+    query: TOOL_PAGE_QUERY,
+    params: { slug: params.slug },
+    tags: [`toolPage:${params.slug}`] // Add appropriate cache tags
+  });
+
+  // Handle case where data might not be found
+  if (!data) {
+    // Optionally, return a 404 page or a specific message
+    // import { notFound } from 'next/navigation';
+    // notFound();
+    return <div className="container mx-auto px-4 py-8 text-center">Tool page not found.</div>;
+  }
+
+  // Render the content component with the fetched data
+  return <ToolPageContent data={data} />;
+}
+
+// Function to generate static paths if using SSG (optional)
+// export async function generateStaticParams() {
+//   const slugs = await sanityFetch<string[]>({ query: `*[_type == "toolPage" && defined(slug.current)][].slug.current` });
+//   return slugs.map((slug) => ({ slug }));
+// }
